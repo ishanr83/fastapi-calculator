@@ -29,40 +29,38 @@ def run_server():  # pragma: no cover
         proc.kill()
 
 
-@pytest.mark.asyncio
-async def test_ui_addition(page):  # pragma: no cover
+def test_ui_addition(page):  # pragma: no cover
     """Test addition through the UI."""
-    await page.goto(BASE)
-    await page.fill("#a", "2")
-    await page.fill("#b", "3")
-    await page.select_option("#op", "add")
-    await page.click("#go")
-    await page.wait_for_selector("#out")
-    text = await page.text_content("#out")
+    page.goto(BASE)
+    page.fill("#a", "2")
+    page.fill("#b", "3")
+    page.select_option("#op", "add")
+    page.click("#go")
+    # Wait for result to appear
+    page.wait_for_selector("#out")
+    text = page.text_content("#out")
     assert text.strip() == "5.0" or text.strip() == "5"
 
 
-@pytest.mark.asyncio
-async def test_ui_multiply(page):  # pragma: no cover
+def test_ui_multiply(page):  # pragma: no cover
     """Test multiplication through the UI."""
-    await page.goto(BASE)
-    await page.fill("#a", "4")
-    await page.fill("#b", "5")
-    await page.select_option("#op", "multiply")
-    await page.click("#go")
-    await page.wait_for_selector("#out")
-    text = await page.text_content("#out")
+    page.goto(BASE)
+    page.fill("#a", "4")
+    page.fill("#b", "5")
+    page.select_option("#op", "multiply")
+    page.click("#go")
+    page.wait_for_selector("#out")
+    text = page.text_content("#out")
     assert text.strip() == "20.0" or text.strip() == "20"
 
 
-@pytest.mark.asyncio
-async def test_ui_divide_by_zero(page):  # pragma: no cover
+def test_ui_divide_by_zero(page):  # pragma: no cover
     """Test division by zero error through the UI."""
-    await page.goto(BASE)
-    await page.fill("#a", "10")
-    await page.fill("#b", "0")
-    await page.select_option("#op", "divide")
-    await page.click("#go")
-    await page.wait_for_selector("#out")
-    text = await page.text_content("#out")
+    page.goto(BASE)
+    page.fill("#a", "10")
+    page.fill("#b", "0")
+    page.select_option("#op", "divide")
+    page.click("#go")
+    page.wait_for_selector("#out")
+    text = page.text_content("#out")
     assert "division by zero" in text.lower()
