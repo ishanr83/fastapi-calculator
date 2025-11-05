@@ -1,3 +1,38 @@
-The AT command has been deprecated. Please use schtasks.exe instead.
+name: CI - FastAPI Calculator
 
-The request is not supported.
+on:
+  push:
+    branches: [ "main", "**" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m playwright install --with-deps
+
+      - name: Run tests with coverage
+        env:
+          APP_LOG_FILE: logs/app.log
+        run: |
+          pytest --cov=app --cov-report=term-missing --cov-fail-under=90 -v
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: coverage-report
+          path: htmlcov/
