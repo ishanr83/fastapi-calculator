@@ -1,9 +1,15 @@
-import logging, os
-LOG_FILE = os.getenv("APP_LOG_FILE", "logs/app.log")
-os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s",
-    handlers=[logging.FileHandler(LOG_FILE, encoding="utf-8"), logging.StreamHandler()]
-)
-logger = logging.getLogger("calc")
+import logging
+from logging.handlers import RotatingFileHandler
+import os
+
+LOG_DIR = os.getenv("LOG_DIR", "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+LOG_FILE = os.path.join(LOG_DIR, "app.log")
+
+logger = logging.getLogger("fastapi-calculator")
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    handler = RotatingFileHandler(LOG_FILE, maxBytes=1_000_000, backupCount=3)
+    fmt = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
+    handler.setFormatter(fmt)
+    logger.addHandler(handler)
