@@ -1,54 +1,95 @@
+"""FastAPI calculator application."""
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
-from app import operations as op
-from app.logger import logger
+import app.operations as op
+from app.logger import log
 
 app = FastAPI(title="FastAPI Calculator")
 
-HTML = """<!doctype html>
-<html><head><meta charset="utf-8"><title>FastAPI Calculator</title></head>
-<body style="font-family:Arial;max-width:600px;margin:40px auto">
-  <h1>FastAPI Calculator</h1>
-  <div>
-    <input id="a" type="number" step="any" placeholder="a">
-    <input id="b" type="number" step="any" placeholder="b">
-    <select id="op">
-      <option>add</option><option>subtract</option><option>multiply</option>
-      <option>divide</option><option>power</option><option>root</option>
-      <option>modulus</option><option>int_divide</option><option>percent</option><option>abs_diff</option>
-    </select>
-    <button id="go">Compute</button>
-    <div id="out" style="margin-top:12px;font-weight:bold"></div>
-  </div>
-  <script>
-    async function call(){
-      const a = document.getElementById('a').value;
-      const b = document.getElementById('b').value;
-      const op = document.getElementById('op').value;
-      const res = await fetch(`/api/${op}?a=${a}&b=${b}`);
-      const data = await res.json();
-      document.getElementById('out').textContent = data.result !== undefined ? data.result : (data.detail || "error");
-    }
-    document.getElementById('go').addEventListener('click', call);
-  </script>
-</body></html>"""
+
+def _calc(func, a: float, b: float) -> float:
+    """Execute calculation with error handling."""
+    try:
+        result = func(a, b)
+        log.info(f"success op={func.__name__} a={a} b={b} result={result}")
+        return result
+    except ValueError as e:
+        log.error(f"error op={func.__name__} a={a} b={b} err={e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        log.error(f"error op={func.__name__} a={a} b={b} err={e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.get("/", response_class=HTMLResponse)
-def index():
+def read_root():
     """Serve the calculator UI."""
-    return HTML
-
-
-def _calc(fn, a: float, b: float) -> float:
-    """Helper function to execute calculation with logging and error handling."""
-    try:
-        value = fn(float(a), float(b))
-        logger.info("op=%s a=%s b=%s result=%s", fn.__name__, a, b, value)
-        return value
-    except Exception as e:
-        logger.error("error op=%s a=%s b=%s err=%s", fn.__name__, a, b, e)
-        raise HTTPException(status_code=400, detail=str(e))
+    html_content = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Calculator</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        input, select, button { margin: 10px 5px; padding: 10px; font-size: 16px; }
+        #out { margin-top: 20px; padding: 10px; background: #f0f0f0; border-radius: 5px; min-height: 20px; }
+    </style>
+</head>
+<body>
+    <h1>FastAPI Calculator</h1>
+    <div>
+        <input type="number" id="a" placeholder="Number A" step="any" value="">
+        <input type="number" id="b" placeholder="Number B" step="any" value="">
+    </div>
+    <div>
+        <select id="op">
+            <option value="add">Add (+)</option>
+            <option value="subtract">Subtract (-)</option>
+            <option value="multiply">Multiply (×)</option>
+            <option value="divide">Divide (÷)</option>
+            <option value="power">Power (^)</option>
+            <option value="root">Root (√)</option>
+            <option value="modulus">Modulus (%%)</option>
+            <option value="int_divide">Integer Divide (//)</option>
+            <option value="percent">Percent</option>
+            <option value="abs_diff">Absolute Difference</option>
+        </select>
+        <button id="go" onclick="calculate()">Calculate</button>
+    </div>
+    <div id="out"></div>
+    <script>
+        async function calculate() {
+            const a = document.getElementById('a').value;
+            const b = document.getElementById('b').value;
+            const operation = document.getElementById('op').value;
+            const outDiv = document.getElementById('out');
+            
+            if (!a || !b) {
+                outDiv.textContent = 'Please enter both numbers';
+                outDiv.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/' + operation + '?a=' + a + '&b=' + b);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    outDiv.textContent = 'Result: ' + data.result;
+                } else {
+                    outDiv.textContent = 'Error: ' + data.detail;
+                }
+                outDiv.style.display = 'block';
+            } catch (error) {
+                outDiv.textContent = 'Error: ' + error.message;
+                outDiv.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
+"""
+    return html_content
 
 
 @app.get("/api/add")
