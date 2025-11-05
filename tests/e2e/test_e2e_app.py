@@ -1,4 +1,4 @@
-import socket
+from main import app
 import time
 import threading
 import uvicorn
